@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Monitor</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span>WhatsApp Web Monitor</span>
+            </div>
+            <button id="themeToggle" class="theme-toggle">🌙</button>
+        </div>
+        
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-title">WhatsApp Connection</div>
+                    <div class="qr-container">
+                        <div id="statusIndicator" class="status status-disconnected">Disconnected</div>
+                        <div id="qrCode" class="qr-code">
+                            <div>Waiting for QR code...</div>
+                        </div>
+                        <div id="connectedInfo" class="hidden">
+                            <p>Logged in as: <strong id="userInfo">-</strong></p>
+                            <p>Phone: <strong id="phoneInfo">-</strong></p>
+                        </div>
+                        <div class="button-group">
+                            <button id="refreshQrBtn" class="button">Refresh QR Code</button>
+                            <button id="scanQrBtn" class="button" disabled>Scan QR (Demo)</button>
+                            <button id="logoutBtn" class="button" disabled>Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card">
+                    <div class="card-title">System Status</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">CPU Usage</div>
+                            <div id="cpuUsage" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Memory Usage</div>
+                            <div id="memoryUsage" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Uptime</div>
+                            <div id="uptime" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Status</div>
+                            <div id="systemStatus" class="stat-value">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">Message Statistics</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Messages</div>
+                            <div id="totalMessages" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Sent Messages</div>
+                            <div id="sentMessages" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Received Messages</div>
+                            <div id="receivedMessages" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Media Messages</div>
+                            <div id="mediaMessages" class="stat-value">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">Recent Messages</div>
+            <div id="messageList" class="message-list">
+                <div class="message message-incoming">
+                    <div class="message-header">
+                        <span class="message-from">Loading messages...</span>
+                        <span class="message-time"></span>
+                    </div>
+                    <div class="message-body">Please wait while we load messages from the database.</div>
+                </div>
+            </div>
+            
+            <div id="sendMessageForm" class="send-message-form hidden">
+                <input id="messageRecipient" type="text" placeholder="Recipient phone number" required>
+                <input id="messageContent" type="text" placeholder="Type a message" required>
+                <button id="sendMessageBtn" class="button">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/script.js"></script>
+</body>
+</html>
