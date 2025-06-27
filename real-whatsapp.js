@@ -65,7 +65,7 @@ let page = null;
 let isCapturingQR = false;
 let latestQr = null;
 
-// WebSocket broadcast
+// Broadcast message to all WebSocket clients
 function broadcast(message) {
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
@@ -74,7 +74,10 @@ function broadcast(message) {
   });
 }
 
-// Function to capture QR code using Puppeteer with XPath
+// Wait for a specified number of milliseconds
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Capture QR code by waiting 10 seconds and taking a full-page screenshot
 async function captureWhatsAppQR() {
   if (isCapturingQR) {
     console.log('QR code capture process already started, please wait...');
@@ -125,52 +128,35 @@ async function captureWhatsAppQR() {
         waitUntil: 'networkidle2',
         timeout: 180000,
       });
+   
     } catch (gotoError) {
       console.error('Error loading WhatsApp Web:', gotoError);
       isCapturingQR = false;
       return { success: false, error: `Failed to load page: ${gotoError.message}` };
     }
 
-    // Wait for QR code
-    console.log('Waiting up to 60 seconds for QR code...');
-    try {
-      await page.waitForXPath('//canvas[@aria-label="Scan me!"]', { timeout: 60000 });
-      console.log('QR code found on page!');
-    } catch (selectorError) {
-      console.error('Failed to find QR code on page:', selectorError);
-      const diagTimestamp = Date.now();
-      const diagPath = path.join(screenshotsDir, `diag_${diagTimestamp}.png`);
-      await page.screenshot({ path: diagPath });
-      console.log(`Diagnostic screenshot saved: ${diagPath}`);
-      isCapturingQR = false;
-      return { success: false, error: `Failed to find QR code: ${selectorError.message}` };
-    }
+    // Wait 10 seconds for QR code to load
+    console.log('Waiting 10 seconds for QR code to load...');
+    await wait(10000);
 
-    // Capture QR code screenshot
+    // Capture full-page screenshot
     const timestamp = Date.now();
     const screenshotUrl = `/screenshots/qr_${timestamp}.png`;
     const screenshotPath = path.join(screenshotsDir, `qr_${timestamp}.png`);
     console.log(`Attempting to save screenshot to: ${screenshotPath}`);
 
     try {
-      const qrElement = await page.$x('//canvas[@aria-label="Scan me!"]');
-      if (qrElement.length > 0) {
-        await qrElement[0].screenshot({ path: screenshotPath });
-        console.log(`QR code screenshot saved: ${screenshotPath}`);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      console.log(`QR code screenshot saved: ${screenshotPath}`);
 
-        // Verify file creation
-        if (fs.existsSync(screenshotPath)) {
-          const stats = fs.statSync(screenshotPath);
-          console.log(`Screenshot file created, size: ${stats.size} bytes`);
-        } else {
-          console.error('Screenshot file was not created!');
-          isCapturingQR = false;
-          return { success: false, error: 'Screenshot file was not created' };
-        }
+      // Verify file creation
+      if (fs.existsSync(screenshotPath)) {
+        const stats = fs.statSync(screenshotPath);
+        console.log(`Screenshot file created, size: ${stats.size} bytes`);
       } else {
-        console.error('QR code not found for screenshot');
+        console.error('Screenshot file was not created!');
         isCapturingQR = false;
-        return { success: false, error: 'QR code not found for screenshot' };
+        return { success: false, error: 'Screenshot file was not created' };
       }
     } catch (screenshotError) {
       console.error('Error capturing screenshot:', screenshotError);
@@ -250,7 +236,7 @@ async function captureWhatsAppQR() {
   }
 }
 
-// Function to check authentication status
+// Check authentication status
 async function startAuthCheck() {
   try {
     if (!browser) {
