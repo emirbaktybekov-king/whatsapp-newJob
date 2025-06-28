@@ -54,9 +54,10 @@ async function startServer() {
     await initializeWhatsAppClient(wss);
 
     const PORT = parseInt(process.env.PORT || '3000', 10);
-    server.listen(PORT, () => {
-      console.log(`Server started on port ${PORT}`);
-      console.log(`Interface available at: http://localhost:${PORT}/web/page`);
+    const HOST = '0.0.0.0'; // Explicitly bind to 0.0.0.0 for Render.com
+    server.listen(PORT, HOST, () => {
+      console.log(`Server started on http://${HOST}:${PORT}`);
+      console.log(`Interface available at: http://${HOST}:${PORT}/web/page`);
     });
   } catch (error) {
     console.error('Error starting server:', error);

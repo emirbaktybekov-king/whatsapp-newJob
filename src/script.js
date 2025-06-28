@@ -7,6 +7,7 @@ const themeToggle = document.getElementById('themeToggle');
 const langSwitch = document.getElementById('langSwitch');
 const statusIndicator = document.getElementById('statusIndicator');
 const qrCode = document.getElementById('qrCode');
+const qrLoadingMessage = document.getElementById('qrLoadingMessage');
 const connectedInfo = document.getElementById('connectedInfo');
 const userInfo = document.getElementById('userInfo');
 const phoneInfo = document.getElementById('phoneInfo');
@@ -62,6 +63,8 @@ function applyTranslations() {
         }
     });
     document.title = translations['title'] || 'WhatsApp Web Monitor';
+    // Update QR loading message visibility
+    qrLoadingMessage.style.display = qrCode.querySelector('.skeleton-qr') ? 'block' : 'none';
 }
 
 // Initialize
@@ -156,10 +159,12 @@ function connectWebSocket() {
     ws.onclose = () => {
         console.log('WebSocket disconnected');
         setTimeout(connectWebSocket, 5000);
+        showSkeleton();
     };
     
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        showSkeleton();
     };
 }
 
@@ -167,6 +172,7 @@ function connectWebSocket() {
 function displayQrCode(qrUrl) {
     console.log('Displaying QR code:', qrUrl);
     qrCode.innerHTML = `<img src="${qrUrl}" alt="WhatsApp QR Code">`;
+    qrLoadingMessage.style.display = 'none';
     scanQrBtn.disabled = false;
     logoutBtn.disabled = true;
     connectedInfo.classList.add('hidden');
@@ -177,7 +183,8 @@ function displayQrCode(qrUrl) {
 }
 
 function showSkeleton() {
-    qrCode.innerHTML = `<div class="skeleton-qr"></div>`;
+    qrCode.innerHTML = `<div class="skeleton-qr"></div><div id="qrLoadingMessage" class="qr-loading-message" data-i18n="qr_loading">${translations['qr_loading'] || 'QR code is loading...'}</div>`;
+    qrLoadingMessage.style.display = 'block';
 }
 
 function handleAuthenticationSuccess(userName) {
@@ -186,8 +193,9 @@ function handleAuthenticationSuccess(userName) {
     statusIndicator.className = 'status status-connected';
     qrCode.innerHTML = `<div>${translations['authenticated'] || 'Authenticated successfully!'}</div>`;
     qrCode.classList.add('hidden');
+    qrLoadingMessage.style.display = 'none';
     connectedInfo.classList.remove('hidden');
-    userInfo.textContent = userName || 'Пользователь WhatsApp';
+    userInfo.textContent = userName || 'WhatsApp User';
     phoneInfo.textContent = '-';
     scanQrBtn.disabled = true;
     logoutBtn.disabled = false;

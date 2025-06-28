@@ -27,5 +27,6 @@
   "message_placeholder": "Type a message",
   "send": "Send",
   "error_messages": "Could not load messages",
-  "error": "Error"
+  "error": "Error",
+  "qr_loading": "QR code is loading..."
 }
