@@ -1,12 +1,24 @@
+# Build stage
+FROM node:18 AS builder
+
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+COPY . .
+RUN yarn build
+
+# Production stage
 FROM node:18
 
 WORKDIR /app
 
 COPY package.json yarn.lock ./
-RUN yarn install --production
+RUN yarn install --production --frozen-lockfile
 
-COPY . .
-RUN yarn build
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src ./src
 
 RUN apt-get update && apt-get install -y \
     chromium \
