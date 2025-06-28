@@ -10,6 +10,6 @@
     "rootDir": "./",
     "moduleResolution": "node"
   },
-  "include": ["server/**/*", "src/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["server/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

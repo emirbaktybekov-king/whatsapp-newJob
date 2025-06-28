@@ -26,6 +26,7 @@ const client = new whatsapp_web_js_1.Client({
     }),
     puppeteer: {
         headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -165,6 +166,7 @@ async function captureWhatsAppQR(refresh = false, wss) {
         // Launch Puppeteer
         browser = await puppeteer_1.default.launch({
             headless: true,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -280,6 +282,7 @@ async function startAuthCheck(wss) {
         if (!browser) {
             browser = await puppeteer_1.default.launch({
                 headless: true,
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',

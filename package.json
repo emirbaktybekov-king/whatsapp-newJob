@@ -4,7 +4,7 @@
   "description": "Minimal WhatsApp bot using whatsapp-web.js, express, qrcode, and puppeteer",
   "main": "server/index.ts",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node dist/server/index.js",
     "build": "tsc",
     "dev": "ts-node --log-error server/index.ts"
   },
