@@ -28,5 +28,7 @@
   "send": "Send",
   "error_messages": "Could not load messages",
   "error": "Error",
-  "qr_loading": "QR code is loading..."
+  "qr_loading": "QR code is loading...",
+  "error_qr": "Could not load QR code",
+  "qr_alt": "WhatsApp QR Code"
 }

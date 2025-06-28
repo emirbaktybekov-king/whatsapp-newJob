@@ -63,45 +63,31 @@ function applyTranslations() {
         }
     });
     document.title = translations['title'] || 'WhatsApp Web Monitor';
-    // Update QR loading message visibility
     qrLoadingMessage.style.display = qrCode.querySelector('.skeleton-qr') ? 'block' : 'none';
 }
 
 // Initialize
 async function init() {
-    // Load initial translations
     await loadTranslations(currentLang);
     langSwitch.value = currentLang;
 
-    // Apply theme
     updateTheme();
-    
-    // Set up theme toggle
     themeToggle.addEventListener('click', toggleTheme);
-    
-    // Set up language switch
     langSwitch.addEventListener('change', async () => {
         currentLang = langSwitch.value;
         localStorage.setItem('language', currentLang);
         await loadTranslations(currentLang);
     });
     
-    // Connect to WebSocket
     connectWebSocket();
-    
-    // Fetch initial QR code and messages
     fetchLatestQr();
     fetchMessages();
     
-    // Set up button handlers
     refreshQrBtn.addEventListener('click', refreshQrCode);
     scanQrBtn.addEventListener('click', scanQrCode);
     logoutBtn.addEventListener('click', logout);
-    
-    // Set up send message form
     sendMessageBtn.addEventListener('click', sendMessage);
     
-    // Poll for QR code every 5 seconds
     setInterval(fetchLatestQr, 5000);
 }
 
@@ -131,7 +117,6 @@ function connectWebSocket() {
     
     ws.onopen = () => {
         console.log('WebSocket connected');
-        // Delay QR code request to avoid race condition
         setTimeout(() => {
             ws.send(JSON.stringify({ type: 'get_qr', id: Date.now() }));
         }, 1000);
@@ -171,7 +156,7 @@ function connectWebSocket() {
 // UI update functions
 function displayQrCode(qrUrl) {
     console.log('Displaying QR code:', qrUrl);
-    qrCode.innerHTML = `<img src="${qrUrl}" alt="WhatsApp QR Code">`;
+    qrCode.innerHTML = `<img src="${qrUrl}" alt="${translations['qr_alt'] || 'WhatsApp QR Code'}" onload="this.style.display='block'" onerror="handleImageError()">`;
     qrLoadingMessage.style.display = 'none';
     scanQrBtn.disabled = false;
     logoutBtn.disabled = true;
@@ -180,6 +165,12 @@ function displayQrCode(qrUrl) {
     statusIndicator.textContent = translations['scan_qr'] || 'Please scan this QR code with WhatsApp';
     statusIndicator.className = 'status status-disconnected';
     isConnected = false;
+}
+
+function handleImageError() {
+    console.error('Failed to load QR code image');
+    qrCode.innerHTML = `<div class="error-message">${translations['error'] || 'Error'}: ${translations['error_qr'] || 'Could not load QR code'}</div>`;
+    qrLoadingMessage.style.display = 'none';
 }
 
 function showSkeleton() {
@@ -236,29 +227,38 @@ function addMessage(message) {
     
     messageList.insertBefore(messageElement, messageList.firstChild);
     
-    // Update message stats
     fetchMessages(1);
 }
 
-// API functions
 async function fetchLatestQr() {
     showSkeleton();
-    try {
-        const response = await fetch('/api/latest-qr');
-        if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
+    let retries = 3;
+    while (retries > 0) {
+        try {
+            const response = await fetch('/api/latest-qr', { timeout: 30000 });
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Fetched QR code:', result);
+            if (result.success) {
+                displayQrCode(result.qrUrl);
+                // Wait briefly to ensure image is available
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return;
+            } else {
+                throw new Error(result.error || 'QR code not found');
+            }
+        } catch (error) {
+            console.error(`Error fetching QR code (attempt ${4 - retries}):`, error);
+            retries--;
+            if (retries === 0) {
+                qrCode.innerHTML = `<div class="error-message">${translations['error'] || 'Error'}: ${translations['error_qr'] || 'Could not load QR code'}</div>`;
+                qrLoadingMessage.style.display = 'none';
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
-        
-        const result = await response.json();
-        console.log('Fetched QR code:', result);
-        if (result.success) {
-            displayQrCode(result.qrUrl);
-        } else {
-            showSkeleton();
-        }
-    } catch (error) {
-        console.error('Error fetching QR code:', error);
-        showSkeleton();
     }
 }
 
@@ -277,7 +277,6 @@ async function fetchMessages(limit = 10) {
             messages.forEach(message => addMessage(message));
         }
         
-        // Update stats
         const total = messages.length;
         const sent = messages.filter(m => m.fromMe).length;
         const received = messages.filter(m => !m.fromMe).length;
@@ -318,6 +317,9 @@ async function refreshQrCode() {
         if (!result.success) {
             throw new Error(result.error || 'Failed to refresh QR code');
         }
+        // Wait for new QR code to be available
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        fetchLatestQr();
     } catch (error) {
         console.error('Error refreshing QR code:', error);
         alert(`${translations['error'] || 'Error'}: ${error.message}`);
@@ -410,5 +412,4 @@ async function sendMessage() {
     }
 }
 
-// Initialize the app
 document.addEventListener('DOMContentLoaded', init);
