@@ -1,7 +1,9 @@
-node_modules
 .env
+.env.development
+.env.production
+node_modules/
+dist/
 *.log
 browser_data/
 screenshots/
-whatsapp_session
-dist/
+whatsapp_session/
