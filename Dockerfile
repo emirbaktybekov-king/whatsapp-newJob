@@ -3,7 +3,7 @@ FROM node:18
 WORKDIR /app
 
 COPY package.json yarn.lock ./
-RUN yarn install
+RUN yarn install --production
 
 COPY . .
 RUN yarn build
@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y \
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV NODE_ENV=production
+ENV RENDER=true
 
 EXPOSE 3000
 
