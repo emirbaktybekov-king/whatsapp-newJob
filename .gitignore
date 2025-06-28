@@ -4,3 +4,4 @@ node_modules
 browser_data/
 screenshots/
 whatsapp_session
+dist/
