@@ -58,6 +58,7 @@ if (!fs.existsSync(srcDir)) {
 app.use(express.json());
 app.use(express.static(srcDir));
 app.use('/screenshots', express.static(screenshotsDir));
+app.use('/lang', express.static(path.join(srcDir, 'lang'))); // Serve language files
 
 // Global variables
 let browser = null;

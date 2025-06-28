@@ -1,5 +1,10 @@
+// Localization
+let currentLang = localStorage.getItem('language') || 'en';
+let translations = {};
+
 // DOM Elements
 const themeToggle = document.getElementById('themeToggle');
+const langSwitch = document.getElementById('langSwitch');
 const statusIndicator = document.getElementById('statusIndicator');
 const qrCode = document.getElementById('qrCode');
 const connectedInfo = document.getElementById('connectedInfo');
@@ -31,13 +36,52 @@ let ws;
 // Connection status
 let isConnected = false;
 
+// Load translations
+async function loadTranslations(lang) {
+    try {
+        const response = await fetch(`/lang/${lang}.json`);
+        if (!response.ok) throw new Error(`Failed to load ${lang}.json`);
+        translations = await response.json();
+        applyTranslations();
+    } catch (error) {
+        console.error('Error loading translations:', error);
+    }
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[key]) {
+            element.textContent = translations[key];
+        }
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (translations[key]) {
+            element.placeholder = translations[key];
+        }
+    });
+    document.title = translations['title'] || 'WhatsApp Web Monitor';
+}
+
 // Initialize
-function init() {
+async function init() {
+    // Load initial translations
+    await loadTranslations(currentLang);
+    langSwitch.value = currentLang;
+
     // Apply theme
     updateTheme();
     
     // Set up theme toggle
     themeToggle.addEventListener('click', toggleTheme);
+    
+    // Set up language switch
+    langSwitch.addEventListener('change', async () => {
+        currentLang = langSwitch.value;
+        localStorage.setItem('language', currentLang);
+        await loadTranslations(currentLang);
+    });
     
     // Connect to WebSocket
     connectWebSocket();
@@ -127,16 +171,20 @@ function displayQrCode(qrUrl) {
     logoutBtn.disabled = true;
     connectedInfo.classList.add('hidden');
     sendMessageForm.classList.add('hidden');
-    statusIndicator.textContent = 'Please scan this QR code with WhatsApp';
+    statusIndicator.textContent = translations['scan_qr'] || 'Please scan this QR code with WhatsApp';
     statusIndicator.className = 'status status-disconnected';
     isConnected = false;
 }
 
+function showSkeleton() {
+    qrCode.innerHTML = `<div class="skeleton-qr"></div>`;
+}
+
 function handleAuthenticationSuccess(userName) {
     console.log('Authentication successful:', userName);
-    statusIndicator.textContent = 'Connected to WhatsApp';
+    statusIndicator.textContent = translations['connected'] || 'Connected to WhatsApp';
     statusIndicator.className = 'status status-connected';
-    qrCode.innerHTML = `<div>Authenticated successfully!</div>`;
+    qrCode.innerHTML = `<div>${translations['authenticated'] || 'Authenticated successfully!'}</div>`;
     qrCode.classList.add('hidden');
     connectedInfo.classList.remove('hidden');
     userInfo.textContent = userName || 'Пользователь WhatsApp';
@@ -186,6 +234,7 @@ function addMessage(message) {
 
 // API functions
 async function fetchLatestQr() {
+    showSkeleton();
     try {
         const response = await fetch('/api/latest-qr');
         if (!response.ok) {
@@ -197,11 +246,11 @@ async function fetchLatestQr() {
         if (result.success) {
             displayQrCode(result.qrUrl);
         } else {
-            qrCode.innerHTML = `<div>No QR code available</div>`;
+            showSkeleton();
         }
     } catch (error) {
         console.error('Error fetching QR code:', error);
-        qrCode.innerHTML = `<div>Error loading QR code: ${error.message}</div>`;
+        showSkeleton();
     }
 }
 
@@ -236,16 +285,17 @@ async function fetchMessages(limit = 10) {
         console.error('Error fetching messages:', error);
         messageList.innerHTML = `<div class="message message-incoming">
             <div class="message-header">
-                <span class="message-from">Error</span>
+                <span class="message-from">${translations['error'] || 'Error'}</span>
                 <span class="message-time"></span>
             </div>
-            <div class="message-body">Could not load messages: ${error.message}</div>
+            <div class="message-body">${translations['error_messages'] || 'Could not load messages'}: ${error.message}</div>
         </div>`;
         return [];
     }
 }
 
 async function refreshQrCode() {
+    showSkeleton();
     try {
         const response = await fetch('/api/refresh-qr', {
             method: 'POST',
@@ -262,7 +312,8 @@ async function refreshQrCode() {
         }
     } catch (error) {
         console.error('Error refreshing QR code:', error);
-        alert(`Error refreshing QR code: ${error.message}`);
+        alert(`${translations['error'] || 'Error'}: ${error.message}`);
+        showSkeleton();
     }
 }
 
@@ -284,7 +335,7 @@ async function scanQrCode() {
         }
     } catch (error) {
         console.error('Error scanning QR code:', error);
-        alert(`Error scanning QR code: ${error.message}`);
+        alert(`${translations['error'] || 'Error'}: ${error.message}`);
         scanQrBtn.disabled = false;
     }
 }
@@ -306,7 +357,7 @@ async function logout() {
         }
     } catch (error) {
         console.error('Error logging out:', error);
-        alert(`Error logging out: ${error.message}`);
+        alert(`${translations['error'] || 'Error'}: ${error.message}`);
     }
 }
 
@@ -316,12 +367,12 @@ async function sendMessage() {
         const body = messageContent.value.trim();
         
         if (!to || !body) {
-            alert('Please enter both recipient and message content');
+            alert(translations['recipient_placeholder'] || 'Please enter both recipient and message content');
             return;
         }
         
         if (!isConnected) {
-            alert('You must be connected to WhatsApp to send messages');
+            alert(translations['connected'] || 'You must be connected to WhatsApp to send messages');
             return;
         }
         
@@ -345,7 +396,7 @@ async function sendMessage() {
         messageContent.value = '';
     } catch (error) {
         console.error('Error sending message:', error);
-        alert(`Error sending message: ${error.message}`);
+        alert(`${translations['error'] || 'Error'}: ${error.message}`);
     } finally {
         sendMessageBtn.disabled = false;
     }

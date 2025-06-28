@@ -3,35 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Web Monitor</title>
+    <title data-i18n="title">WhatsApp Web Monitor</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">
-                <span>WhatsApp Web Monitor</span>
+                <span data-i18n="title">WhatsApp Web Monitor</span>
             </div>
-            <button id="themeToggle" class="theme-toggle">🌙</button>
+            <div class="header-controls">
+                <select id="langSwitch" class="lang-switch">
+                    <option value="en">EN</option>
+                    <option value="kg">KG</option>
+                    <option value="ru">RU</option>
+                </select>
+                <button id="themeToggle" class="theme-toggle">🌙</button>
+            </div>
         </div>
         
         <div class="row">
             <div class="col">
                 <div class="card">
-                    <div class="card-title">WhatsApp Connection</div>
+                    <div class="card-title" data-i18n="whatsapp_connection">WhatsApp Connection</div>
                     <div class="qr-container">
-                        <div id="statusIndicator" class="status status-disconnected">Disconnected</div>
+                        <div id="statusIndicator" class="status status-disconnected" data-i18n="disconnected">Disconnected</div>
                         <div id="qrCode" class="qr-code">
-                            <div>Waiting for QR code...</div>
+                            <div class="skeleton-qr"></div>
                         </div>
                         <div id="connectedInfo" class="hidden">
-                            <p>Logged in as: <strong id="userInfo">-</strong></p>
-                            <p>Phone: <strong id="phoneInfo">-</strong></p>
+                            <p><span data-i18n="logged_in_as">Logged in as</span>: <strong id="userInfo">-</strong></p>
+                            <p><span data-i18n="phone">Phone</span>: <strong id="phoneInfo">-</strong></p>
                         </div>
                         <div class="button-group">
-                            <button id="refreshQrBtn" class="button">Refresh QR Code</button>
-                            <button id="scanQrBtn" class="button" disabled>Scan QR (Demo)</button>
-                            <button id="logoutBtn" class="button" disabled>Logout</button>
+                            <button id="refreshQrBtn" class="button" data-i18n="refresh_qr">Refresh QR Code</button>
+                            <button id="scanQrBtn" class="button" data-i18n="scan_qr_btn" disabled>Scan QR (Demo)</button>
+                            <button id="logoutBtn" class="button" data-i18n="logout" disabled>Logout</button>
                         </div>
                     </div>
                 </div>
@@ -39,44 +46,44 @@
             
             <div class="col">
                 <div class="card">
-                    <div class="card-title">System Status</div>
+                    <div class="card-title" data-i18n="system_status">System Status</div>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <div class="stat-label">CPU Usage</div>
+                            <div class="stat-label" data-i18n="cpu_usage">CPU Usage</div>
                             <div id="cpuUsage" class="stat-value">-</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Memory Usage</div>
+                            <div class="stat-label" data-i18n="memory_usage">Memory Usage</div>
                             <div id="memoryUsage" class="stat-value">-</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Uptime</div>
+                            <div class="stat-label" data-i18n="uptime">Uptime</div>
                             <div id="uptime" class="stat-value">-</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Status</div>
+                            <div class="stat-label" data-i18n="status">Status</div>
                             <div id="systemStatus" class="stat-value">-</div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="card-title">Message Statistics</div>
+                    <div class="card-title" data-i18n="message_statistics">Message Statistics</div>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <div class="stat-label">Total Messages</div>
+                            <div class="stat-label" data-i18n="total_messages">Total Messages</div>
                             <div id="totalMessages" class="stat-value">0</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Sent Messages</div>
+                            <div class="stat-label" data-i18n="sent_messages">Sent Messages</div>
                             <div id="sentMessages" class="stat-value">0</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Received Messages</div>
+                            <div class="stat-label" data-i18n="received_messages">Received Messages</div>
                             <div id="receivedMessages" class="stat-value">0</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Media Messages</div>
+                            <div class="stat-label" data-i18n="media_messages">Media Messages</div>
                             <div id="mediaMessages" class="stat-value">0</div>
                         </div>
                     </div>
@@ -85,21 +92,21 @@
         </div>
         
         <div class="card">
-            <div class="card-title">Recent Messages</div>
+            <div class="card-title" data-i18n="recent_messages">Recent Messages</div>
             <div id="messageList" class="message-list">
                 <div class="message message-incoming">
                     <div class="message-header">
-                        <span class="message-from">Loading messages...</span>
+                        <span class="message-from" data-i18n="loading_messages">Loading messages...</span>
                         <span class="message-time"></span>
                     </div>
-                    <div class="message-body">Please wait while we load messages from the database.</div>
+                    <div class="message-body" data-i18n="wait_messages">Please wait while we load messages from the database.</div>
                 </div>
             </div>
             
             <div id="sendMessageForm" class="send-message-form hidden">
-                <input id="messageRecipient" type="text" placeholder="Recipient phone number" required>
-                <input id="messageContent" type="text" placeholder="Type a message" required>
-                <button id="sendMessageBtn" class="button">Send</button>
+                <input id="messageRecipient" type="text" data-i18n-placeholder="recipient_placeholder" placeholder="Recipient phone number" required>
+                <input id="messageContent" type="text" data-i18n-placeholder="message_placeholder" placeholder="Type a message" required>
+                <button id="sendMessageBtn" class="button" data-i18n="send">Send</button>
             </div>
         </div>
     </div>
