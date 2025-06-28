@@ -1,12 +1,12 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
-import path from 'path';
-import fs from 'fs';
-import { Client, LocalAuth, Message } from 'whatsapp-web.js';
-import { WebSocketServer } from 'ws';
-import { pool } from '../database/postgres';
-import { wait } from '../helpers/utils';
+import puppeteer, { Browser, Page } from "puppeteer";
+import path from "path";
+import fs from "fs";
+import { Client, LocalAuth, Message } from "whatsapp-web.js";
+import { WebSocketServer } from "ws";
+import { pool } from "../database/postgres";
+import { wait } from "../helpers/utils";
 
-const screenshotsDir = path.join(__dirname, '../../screenshots');
+const screenshotsDir = path.join(__dirname, "../../screenshots");
 
 interface QRResponse {
   success: boolean;
@@ -34,46 +34,45 @@ let latestQr: { qrUrl: string; path: string; timestamp: number } | null = null;
 
 const client = new Client({
   authStrategy: new LocalAuth({
-    dataPath: path.resolve(__dirname, '../../whatsapp_session'),
+    dataPath: path.resolve(__dirname, "../../whatsapp_session"),
   }),
   puppeteer: {
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--disable-gpu',
-      '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--disable-gpu",
+      "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
     ],
     timeout: 120000,
   },
 });
 
-// Extend Message interface to include notifyName
 interface ExtendedMessage extends Message {
   notifyName?: string;
 }
 
 export async function initializeWhatsAppClient(wss: WebSocketServer) {
-  client.on('ready', async () => {
-    console.log('WhatsApp client is ready!');
-    let userName = 'WhatsApp User';
+  client.on("ready", async () => {
+    console.log("WhatsApp client is ready!");
+    let userName = "WhatsApp User";
     try {
       const info = await client.getState();
-      if (info === 'CONNECTED') {
+      if (info === "CONNECTED") {
         const chats = await client.getChats();
-        userName = chats[0]?.name || 'WhatsApp User';
+        userName = chats[0]?.name || "WhatsApp User";
       }
     } catch (error) {
-      console.log('Failed to retrieve username');
+      console.log("Failed to retrieve username");
     }
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(
           JSON.stringify({
-            type: 'authenticated',
+            type: "authenticated",
             data: {
               userName,
               timestamp: Date.now(),
@@ -84,13 +83,12 @@ export async function initializeWhatsAppClient(wss: WebSocketServer) {
     });
   });
 
-  client.on('message', async (message: ExtendedMessage) => {
+  client.on("message", async (message: ExtendedMessage) => {
     try {
-      if (message.body === '!ping') {
-        await message.reply('Pong!');
+      if (message.body === "!ping") {
+        await message.reply("Pong!");
       }
 
-      // Save message to database
       const tableCheck = await pool.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
@@ -112,11 +110,11 @@ export async function initializeWhatsAppClient(wss: WebSocketServer) {
             contact_name VARCHAR(255)
           );
         `);
-        console.log('messages table created');
+        console.log("messages table created");
       }
 
-      const chatName = message.notifyName || '';
-      const contactName = message.notifyName || '';
+      const chatName = message.notifyName || "";
+      const contactName = message.notifyName || "";
 
       const result = await pool.query(
         `
@@ -137,12 +135,11 @@ export async function initializeWhatsAppClient(wss: WebSocketServer) {
 
       console.log(`Message saved to database with ID: ${result.rows[0].id}`);
 
-      // Broadcast message via WebSocket
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
-              type: 'new_message',
+              type: "new_message",
               data: {
                 from: message.from,
                 to: message.to,
@@ -157,19 +154,22 @@ export async function initializeWhatsAppClient(wss: WebSocketServer) {
         }
       });
     } catch (error) {
-      console.error('Error processing message:', error);
+      console.error("Error processing message:", error);
     }
   });
 
   await client.initialize();
 }
 
-export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocketServer): Promise<QRResponse> {
+export async function captureWhatsAppQR(
+  refresh: boolean = false,
+  wss: WebSocketServer
+): Promise<QRResponse> {
   if (isCapturingQR) {
-    console.log('QR code capture process already started, please wait...');
+    console.log("QR code capture process already started, please wait...");
     return latestQr
       ? { success: true, qrUrl: latestQr.qrUrl, path: latestQr.path }
-      : { success: false, error: 'Process already started' };
+      : { success: false, error: "Process already started" };
   }
 
   if (refresh) {
@@ -177,86 +177,89 @@ export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocket
   }
 
   isCapturingQR = true;
-  console.log('Starting WhatsApp QR code capture...');
+  console.log("Starting WhatsApp QR code capture...");
 
-  // Deactivate old QR codes
   try {
-    await pool.query('UPDATE screenshot_qr SET is_active = FALSE WHERE is_active = TRUE');
+    await pool.query(
+      "UPDATE screenshot_qr SET is_active = FALSE WHERE is_active = TRUE"
+    );
   } catch (dbError) {
-    console.error('Error deactivating old QR codes:', dbError);
+    console.error("Error deactivating old QR codes:", dbError);
   }
 
   try {
-    // Close previous browser if open
     if (browser) {
       try {
         await browser.close();
       } catch (closeError) {
-        console.error('Error closing previous browser session:', closeError);
+        console.error("Error closing previous browser session:", closeError);
       }
       browser = null;
       page = null;
     }
 
-    // Launch Puppeteer
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+        "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
       ],
     });
     page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
 
-    // Navigate to WhatsApp Web
-    console.log('Navigating to https://web.whatsapp.com/...');
+    console.log("Navigating to https://web.whatsapp.com/...");
     try {
-      await page.goto('https://web.whatsapp.com/', {
-        waitUntil: 'networkidle2',
+      await page.goto("https://web.whatsapp.com/", {
+        waitUntil: "networkidle2",
         timeout: 180000,
       });
     } catch (gotoError: any) {
-      console.error('Error loading WhatsApp Web:', gotoError);
+      console.error("Error loading WhatsApp Web:", gotoError);
       isCapturingQR = false;
-      return { success: false, error: `Failed to load page: ${gotoError.message}` };
+      return {
+        success: false,
+        error: `Failed to load page: ${gotoError.message}`,
+      };
     }
 
-    // Wait 10 seconds for QR code to load
-    console.log('Waiting 10 seconds for QR code to load...');
+    console.log("Waiting 10 seconds for QR code to load...");
     await wait(10000);
 
-    // Capture full-page screenshot
     const timestamp = Date.now();
     const screenshotUrl = `/screenshots/qr_${timestamp}.png`;
     const screenshotPath = path.join(screenshotsDir, `qr_${timestamp}.png`);
     console.log(`Attempting to save screenshot to: ${screenshotPath}`);
 
     try {
-      await page.screenshot({ path: screenshotPath as `qr_${string}.png`, fullPage: true });
+      await page.screenshot({
+        path: screenshotPath as `qr_${string}.png`,
+        fullPage: true,
+      });
       console.log(`QR code screenshot saved: ${screenshotPath}`);
 
-      // Verify file creation
       if (fs.existsSync(screenshotPath)) {
         const stats = fs.statSync(screenshotPath);
         console.log(`Screenshot file created, size: ${stats.size} bytes`);
       } else {
-        console.error('Screenshot file was not created!');
+        console.error("Screenshot file was not created!");
         isCapturingQR = false;
-        return { success: false, error: 'Screenshot file was not created' };
+        return { success: false, error: "Screenshot file was not created" };
       }
     } catch (screenshotError: any) {
-      console.error('Error capturing screenshot:', screenshotError);
+      console.error("Error capturing screenshot:", screenshotError);
       isCapturingQR = false;
-      return { success: false, error: `Failed to capture screenshot: ${screenshotError.message}` };
+      return {
+        success: false,
+        error: `Failed to capture screenshot: ${screenshotError.message}`,
+      };
     }
 
-    // Save to database
     try {
       const tableCheck = await pool.query(`
         SELECT EXISTS (
@@ -276,7 +279,7 @@ export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocket
             is_active BOOLEAN DEFAULT TRUE
           );
         `);
-        console.log('screenshot_qr table created');
+        console.log("screenshot_qr table created");
       }
 
       const result = await pool.query(
@@ -290,10 +293,8 @@ export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocket
 
       console.log(`Database entry added with ID: ${result.rows[0].id}`);
 
-      // Save latest QR code in memory
       latestQr = { qrUrl: screenshotUrl, path: screenshotPath, timestamp };
 
-      // Start authentication check
       await startAuthCheck(wss);
 
       return {
@@ -302,7 +303,7 @@ export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocket
         path: screenshotPath,
       };
     } catch (dbError: any) {
-      console.error('Error saving to database:', dbError);
+      console.error("Error saving to database:", dbError);
       latestQr = { qrUrl: screenshotUrl, path: screenshotPath, timestamp };
       return {
         success: true,
@@ -312,7 +313,7 @@ export async function captureWhatsAppQR(refresh: boolean = false, wss: WebSocket
       };
     }
   } catch (error: any) {
-    console.error('Error capturing QR code:', error);
+    console.error("Error capturing QR code:", error);
     return {
       success: false,
       error: error.message,
@@ -327,24 +328,27 @@ async function startAuthCheck(wss: WebSocketServer) {
     if (!browser) {
       browser = await puppeteer.launch({
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--disable-gpu",
+          "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
         ],
       });
     }
     if (!page) {
       page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 720 });
-      await page.goto('https://web.whatsapp.com/', { waitUntil: 'networkidle2', timeout: 180000 });
+      await page.goto("https://web.whatsapp.com/", {
+        waitUntil: "networkidle2",
+        timeout: 180000,
+      });
     }
 
-    console.log('Starting authentication monitoring...');
+    console.log("Starting authentication monitoring...");
 
     const checkInterval = setInterval(async () => {
       if (!page) {
@@ -354,30 +358,34 @@ async function startAuthCheck(wss: WebSocketServer) {
 
       try {
         const isAuthenticated = await page.evaluate(() => {
-          return document.querySelector('div[data-testid="chat-list"]') !== null;
+          return (
+            document.querySelector('div[data-testid="chat-list"]') !== null
+          );
         });
 
         if (isAuthenticated) {
-          console.log('User authenticated in WhatsApp Web!');
+          console.log("User authenticated in WhatsApp Web!");
 
-          let userName: string = 'WhatsApp User';
+          let userName: string = "WhatsApp User";
           try {
             const nameElement = await page.evaluate(() => {
-              const element = document.querySelector('span[data-testid="default-user"]');
+              const element = document.querySelector(
+                'span[data-testid="default-user"]'
+              );
               return element ? element.textContent : null;
             });
             if (nameElement) {
               userName = nameElement;
             }
           } catch (nameError) {
-            console.log('Failed to retrieve username');
+            console.log("Failed to retrieve username");
           }
 
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(
                 JSON.stringify({
-                  type: 'authenticated',
+                  type: "authenticated",
                   data: {
                     userName,
                     timestamp: Date.now(),
@@ -395,11 +403,11 @@ async function startAuthCheck(wss: WebSocketServer) {
           }
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
+        console.error("Error checking authentication:", error);
       }
     }, 5000);
   } catch (error) {
-    console.error('Error launching Puppeteer for authentication check:', error);
+    console.error("Error launching Puppeteer for authentication check:", error);
   }
 }
 
@@ -416,10 +424,10 @@ export async function getLatestQR(): Promise<QRResponse> {
     } else if (latestQr) {
       return { success: true, qrUrl: latestQr.qrUrl };
     } else {
-      return { success: false, error: 'QR code not found' };
+      return { success: false, error: "QR code not found" };
     }
   } catch (error: any) {
-    console.error('Error retrieving latest QR code:', error);
+    console.error("Error retrieving latest QR code:", error);
     if (latestQr) {
       return { success: true, qrUrl: latestQr.qrUrl };
     } else {
@@ -440,7 +448,7 @@ export async function getMessages(limit: number): Promise<MessageData[]> {
     );
     return result.rows;
   } catch (error: any) {
-    console.error('Error retrieving messages:', error);
+    console.error("Error retrieving messages:", error);
     throw error;
   }
 }

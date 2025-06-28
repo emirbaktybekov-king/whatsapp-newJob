@@ -4,9 +4,9 @@
   "description": "Minimal WhatsApp bot using whatsapp-web.js, express, qrcode, and puppeteer",
   "main": "server/index.ts",
   "scripts": {
-    "start": "node dist/server/index.js",
-    "build": "tsc",
-    "dev": "ts-node --log-error server/index.ts"
+    "start": "NODE_ENV=production node dist/server/index.js",
+    "dev": "NODE_ENV=development ts-node --log-error server/index.ts",
+    "build": "tsc && copyfiles -u 1 src/*.html src/*.css src/lang/**/* dist/src/"
   },
   "dependencies": {
     "@types/express": "^5.0.3",
@@ -16,15 +16,18 @@
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "pg": "^8.16.2",
+    "punycode": "^2.3.1",
     "puppeteer": "^24.10.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "whatsapp-web.js": "^1.30.0"
   },
   "devDependencies": {
-    "@types/puppeteer": "^7.0.4"
+    "@types/puppeteer": "^7.0.4",
+    "copyfiles": "^2.4.1"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "license": "MIT"
 }
