@@ -15,7 +15,7 @@ export function setupWebSocket(wss: WebSocketServer) {
         console.log('Received client message:', data);
         if (data.type === 'get_qr') {
           console.log('QR code request via WebSocket');
-          const result = await captureWhatsAppQR(false, wss); // Pass wss
+          const result = await captureWhatsAppQR(false, wss);
           ws.send(
             JSON.stringify({
               type: 'response',
